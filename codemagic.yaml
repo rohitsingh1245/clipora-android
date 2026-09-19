@@ -17,39 +17,29 @@ workflows:
         script: |
           set -e
           cd "$CM_BUILD_DIR"
-          test -f clipora-phase1-api37.zip
-          unzip -o clipora-phase1-api37.zip -d "$CM_BUILD_DIR"
+          test -f clipora-phase1-api36-stable.zip
+          unzip -o clipora-phase1-api36-stable.zip -d "$CM_BUILD_DIR"
           test -f settings.gradle.kts
           test -f app/build.gradle.kts
 
-      - name: Configure Android SDK 37
+      - name: Configure Android SDK 36
         script: |
           set -e
-
           SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}"
           SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDK_ROOT="/usr/local/share/android-sdk"
-            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          fi
-
-          echo "Using Android SDK: $SDK_ROOT"
-          echo "Using sdkmanager: $SDKMANAGER"
-          "$SDKMANAGER" --version
-
           echo "sdk.dir=$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
 
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          if [ ! -d "$SDK_ROOT/platforms/android-36" ]; then
+            "$SDKMANAGER" "platforms;android-36"
+          fi
 
-          # Android 17 / API 37 is currently exposed through the preview/canary channel.
-          "$SDKMANAGER" "platforms;android-37" --channel=3
+          if [ ! -d "$SDK_ROOT/build-tools/36.0.0" ]; then
+            "$SDKMANAGER" "build-tools;36.0.0"
+          fi
 
-          # Keep a known stable build-tools package available for AGP.
-          "$SDKMANAGER" "build-tools;36.0.0"
-
-          echo "Installed Android 37 packages:"
-          "$SDKMANAGER" --list_installed | grep -E "platforms;android-37|build-tools;36.0.0" || true
+          test -d "$SDK_ROOT/platforms/android-36"
+          echo "Android SDK 36 ready."
 
       - name: Install Gradle 9.6
         script: |
