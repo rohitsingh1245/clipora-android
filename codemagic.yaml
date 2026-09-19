@@ -25,6 +25,7 @@ workflows:
       - name: Configure Android SDK 37
         script: |
           set -e
+
           SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}"
           SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
@@ -40,7 +41,15 @@ workflows:
           echo "sdk.dir=$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
 
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-37" "build-tools;36.0.0"
+
+          # Android 17 / API 37 is currently exposed through the preview/canary channel.
+          "$SDKMANAGER" "platforms;android-37" --channel=3
+
+          # Keep a known stable build-tools package available for AGP.
+          "$SDKMANAGER" "build-tools;36.0.0"
+
+          echo "Installed Android 37 packages:"
+          "$SDKMANAGER" --list_installed | grep -E "platforms;android-37|build-tools;36.0.0" || true
 
       - name: Install Gradle 9.6
         script: |
