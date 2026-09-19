@@ -19,26 +19,40 @@ workflows:
           cd "$CM_BUILD_DIR"
           test -f clipora-phase1.zip
           unzip -o clipora-phase1.zip -d "$CM_BUILD_DIR"
+          test -f settings.gradle.kts
+          test -f app/build.gradle.kts
 
-      - name: Set Android SDK location
+      - name: Configure Android SDK
         script: |
           set -e
-          cd "$CM_BUILD_DIR"
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Ensure Android SDK 36
-        script: |
-          set -e
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="/usr/local/share/android-sdk/cmdline-tools/latest/bin/sdkmanager"
+            SDK_ROOT="/usr/local/share/android-sdk"
+          fi
+
+          echo "Using Android SDK: $SDK_ROOT"
+          echo "Using sdkmanager: $SDKMANAGER"
+          "$SDKMANAGER" --version
+
+          echo "sdk.dir=$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install Gradle 9.6
         script: |
           set -e
-          curl -L --fail --retry 3 \
-            https://services.gradle.org/distributions/gradle-9.6.0-bin.zip \
-            -o /tmp/gradle-9.6.0-bin.zip
-          unzip -q -o /tmp/gradle-9.6.0-bin.zip -d /tmp
+          if [ ! -x /tmp/gradle-9.6.0/bin/gradle ]; then
+            curl -L --fail --retry 3 \
+              https://services.gradle.org/distributions/gradle-9.6.0-bin.zip \
+              -o /tmp/gradle-9.6.0-bin.zip
+            unzip -q -o /tmp/gradle-9.6.0-bin.zip -d /tmp
+          fi
+          /tmp/gradle-9.6.0/bin/gradle --version
 
       - name: Run unit tests
         script: |
