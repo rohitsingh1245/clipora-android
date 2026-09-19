@@ -1,6 +1,6 @@
 workflows:
-  clipora-debug:
-    name: Clipora Debug APK
+  clipora-v2-debug:
+    name: Clipora V2 Debug APK
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -13,12 +13,12 @@ workflows:
         - ~/.gradle/notifications
 
     scripts:
-      - name: Extract Clipora source
+      - name: Extract Clipora V2 source
         script: |
           set -e
           cd "$CM_BUILD_DIR"
-          test -f clipora-phase1-api36-stable.zip
-          unzip -o clipora-phase1-api36-stable.zip -d "$CM_BUILD_DIR"
+          test -f clipora-v2.zip
+          unzip -o clipora-v2.zip -d "$CM_BUILD_DIR"
           test -f settings.gradle.kts
           test -f app/build.gradle.kts
 
@@ -27,7 +27,6 @@ workflows:
           set -e
           SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/share/android-sdk}"
           SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-
           echo "sdk.dir=$SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
 
           if [ ! -d "$SDK_ROOT/platforms/android-36" ]; then
@@ -38,9 +37,6 @@ workflows:
             "$SDKMANAGER" "build-tools;36.0.0"
           fi
 
-          test -d "$SDK_ROOT/platforms/android-36"
-          echo "Android SDK 36 ready."
-
       - name: Install Gradle 9.6
         script: |
           set -e
@@ -50,7 +46,6 @@ workflows:
               -o /tmp/gradle-9.6.0-bin.zip
             unzip -q -o /tmp/gradle-9.6.0-bin.zip -d /tmp
           fi
-          /tmp/gradle-9.6.0/bin/gradle --version
 
       - name: Run unit tests
         script: |
@@ -58,7 +53,7 @@ workflows:
           cd "$CM_BUILD_DIR"
           /tmp/gradle-9.6.0/bin/gradle --no-daemon testDebugUnitTest
 
-      - name: Build Clipora debug APK
+      - name: Build Clipora V2 debug APK
         script: |
           set -e
           cd "$CM_BUILD_DIR"
