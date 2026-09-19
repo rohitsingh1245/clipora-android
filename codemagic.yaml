@@ -1,3 +1,57 @@
-git add codemagic.yaml
-git commit -m 'Add first workflow'
-git push
+workflows:
+  clipora-debug:
+    name: Clipora Debug APK
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      java: 17
+
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.gradle/notifications
+
+    scripts:
+      - name: Extract Clipora source
+        script: |
+          set -e
+          cd "$CM_BUILD_DIR"
+          test -f clipora-phase1.zip
+          unzip -o clipora-phase1.zip -d "$CM_BUILD_DIR"
+
+      - name: Set Android SDK location
+        script: |
+          set -e
+          cd "$CM_BUILD_DIR"
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      - name: Ensure Android SDK 36
+        script: |
+          set -e
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install Gradle 9.6
+        script: |
+          set -e
+          curl -L --fail --retry 3 \
+            https://services.gradle.org/distributions/gradle-9.6.0-bin.zip \
+            -o /tmp/gradle-9.6.0-bin.zip
+          unzip -q -o /tmp/gradle-9.6.0-bin.zip -d /tmp
+
+      - name: Run unit tests
+        script: |
+          set -e
+          cd "$CM_BUILD_DIR"
+          /tmp/gradle-9.6.0/bin/gradle --no-daemon testDebugUnitTest
+
+      - name: Build Clipora debug APK
+        script: |
+          set -e
+          cd "$CM_BUILD_DIR"
+          /tmp/gradle-9.6.0/bin/gradle --no-daemon assembleDebug
+
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
+      - app/build/reports/**
